@@ -22,6 +22,7 @@ public final class JsonReader extends Serializer
 		hasError = true;
 		jsonValue = null;
 		if (null == jsonText) {
+			System.err.println("null 0");
 			return null;
 		}
 		jsonText = jsonText.trim();
@@ -374,6 +375,7 @@ public final class JsonReader extends Serializer
 			this.jsonText = this.jsonText.substring(5).trim();
 			return jsonText;
 		}
+		System.err.println("null 9");
 		return null;
 	}
 	
@@ -394,6 +396,7 @@ public final class JsonReader extends Serializer
 			this.jsonText = this.jsonText.substring(9).trim();
 			return jsonText;
 		}
+		System.err.println("null 10");
 		return null;
 	}
 	
@@ -413,24 +416,22 @@ public final class JsonReader extends Serializer
 				continue loop;
 				
 			case '\"'://字符串
-				if ((retValue = getPureString()) == null) {
-					return null;
+				if ((retValue = getPureString()) != null) {
+					jsonList.add(retValue);
 				}
-				jsonList.add(retValue);
 				continue loop;
 				
 			case '['://数组
-				if ((retValue = getListValue()) == null) {
-					return null;
+				if ((retValue = getListValue()) != null) {
+					jsonList.add(retValue);
 				}
-				jsonList.add(retValue);
 				continue loop;
 				
 			case '{'://对象
-				if ((retValue = getMapValue()) == null) {
-					return null;
+				System.err.println(jsonText);
+				if ((retValue = getMapValue()) != null) {
+					jsonList.add(retValue);
 				}
-				jsonList.add(retValue);
 				continue loop;
 				
 			case 't'://true etc.
@@ -439,18 +440,16 @@ public final class JsonReader extends Serializer
 			case 'F'://False etc.
 			case 'y'://yes etc.
 			case 'Y'://YES etc.
-				if ((retValue = getBooleanString()) == null) {
-					return null;
+				if ((retValue = getBooleanString()) != null) {
+					jsonList.add(retValue);
 				}
-				jsonList.add(retValue);
 				continue loop;
 				
 			case 'u'://undefined etc.
 			case 'U'://Undefined etc.
-				if ((retValue = getNULLString()) == null) {
-					return null;
+				if ((retValue = getNULLString()) != null) {
+					//jsonList.add(retValue);
 				}
-				//jsonList.add(retValue);
 				continue loop;
 				
 			case 'n'://null nil none no etc.
@@ -502,6 +501,7 @@ public final class JsonReader extends Serializer
 		String retKey = null;
 		Object retValue = null;
 		this.jsonText = this.jsonText.substring(1).trim();
+		boolean null_key = false;
 		loop:
 		while (true)
 		{
@@ -514,32 +514,47 @@ public final class JsonReader extends Serializer
 				continue loop;
 				
 			case '\"'://字符串
-				if (retKey == null) {
-					if ((retKey = getPureString()) == null) {
-						return null;
-					}
-				} else {
-					if ((retValue = getPureString()) == null) {
-						return null;
-					}
-					jsonMap.put(retKey, retValue);
-					retKey = null;
+				retValue = getPureString();
+				if (null_key)
+				{
+					null_key = false;
+					continue loop;
 				}
+				if (retKey == null)
+				{
+					retKey = (String) retValue;
+					null_key = retKey == null;
+					continue loop;
+				}
+				if (retValue != null) {
+					jsonMap.put(retKey, retValue);
+				}
+				retKey = null;
 				continue loop;
 				
 			case '['://数组
-				if (retKey == null || (retValue = getListValue()) == null) {
-					return null;
+				retValue = getListValue();
+				if (null_key)
+				{
+					null_key = false;
+					continue loop;
 				}
-				jsonMap.put(retKey, retValue);
+				if (retValue != null) {
+					jsonMap.put(retKey, retValue);
+				}
 				retKey = null;
 				continue loop;
 				
 			case '{'://对象
-				if (retKey == null || (retValue = getMapValue()) == null) {
-					return null;
+				retValue = getMapValue();
+				if (null_key)
+				{
+					null_key = false;
+					continue loop;
 				}
-				jsonMap.put(retKey, retValue);
+				if (retValue != null) {
+					jsonMap.put(retKey, retValue);
+				}
 				retKey = null;
 				continue loop;
 				
@@ -549,16 +564,27 @@ public final class JsonReader extends Serializer
 			case 'F'://False
 			case 'y'://yes
 			case 'Y'://YES
-				if (retKey == null || (retValue = getBooleanString()) == null) {
-					return null;
+				retValue = getBooleanString();
+				if (null_key)
+				{
+					null_key = false;
+					continue loop;
 				}
-				jsonMap.put(retKey, retValue);
+				if (retValue != null) {
+					jsonMap.put(retKey, retValue);
+				}
 				retKey = null;
 				continue loop;
 				
 			case 'u'://undefined
 			case 'U'://undefined
-				if (retKey == null || getNULLString() == null) {
+				retValue = getNULLString();
+				if (null_key)
+				{
+					null_key = false;
+					continue loop;
+				}
+				if (retValue == null) {
 					return null;
 				}
 				retKey = null;
@@ -566,9 +592,6 @@ public final class JsonReader extends Serializer
 				
 			case 'n'://null nil none no
 			case 'N'://null nil none no
-				if (retKey == null) {
-					return null;
-				}
 				idxChar = jsonText.charAt(1);
 				if ('o' == idxChar || idxChar == 'O') //no none
 				{
@@ -577,11 +600,22 @@ public final class JsonReader extends Serializer
 						if ((retValue = getNULLString()) == null) {
 							return null;
 						}
+						if (null_key)
+						{
+							null_key = false;
+							continue loop;
+						}
 					}
 					else //no
 					{
-						if ((retValue = getBooleanString()) == null) {
+						retValue = getBooleanString();
+						if (retValue == null) {
 							return null;
+						}
+						if (null_key)
+						{
+							null_key = false;
+							continue loop;
 						}
 						jsonMap.put(retKey, retValue);
 					}
@@ -590,6 +624,11 @@ public final class JsonReader extends Serializer
 				{
 					if ((retValue = getNULLString()) == null) {
 						return null;
+					}
+					if (null_key)
+					{
+						null_key = false;
+						continue loop;
 					}
 				}
 				retKey = null;
@@ -600,10 +639,15 @@ public final class JsonReader extends Serializer
 				return jsonMap.size() == 0 ? null : jsonMap;
 
 			default://number
-				if (retKey == null || (retValue = getNumberString()) == null) {
-					return null;
+				retValue = getNumberString();
+				if (null_key)
+				{
+					null_key = false;
+					continue loop;
 				}
-				jsonMap.put(retKey, retValue);
+				if (retValue != null) {
+					jsonMap.put(retKey, retValue);
+				}
 				retKey = null;
 				continue loop;
 			}
